@@ -1,0 +1,162 @@
+app/
+├── api/
+│   └── routers/
+│       ├── datasets.py
+│       ├── exports.py
+│       ├── feriados.py
+│       ├── forecast.py
+│       ├── imports.py
+│       ├── model_evaluation.py
+│       ├── notifications.py
+│       ├── predict.py
+│       ├── reports.py
+│       ├── sync.py
+│       └── train.py
+│
+├── audit/
+│   ├── audit_repository.py
+│   └── audit_service.py
+│
+├── config/
+│   └── settings.py
+│
+├── data/
+│   ├── ingestion/
+│   │   ├── api_loader.py
+│   │   ├── base_loader.py
+│   │   ├── csv_loader.py
+│   │   ├── database_loader.py
+│   │   ├── excel_loader.py
+│   │   ├── json_loader.py
+│   │   ├── loader_factory.py
+│   │   └── parquet_loader.py
+│   │
+│   ├── preprocessing/
+│   │   ├── cleaner.py
+│   │   ├── date_parser.py
+│   │   ├── missing_values.py
+│   │   ├── normalizer.py
+│   │   └── outliers.py
+│   │
+│   ├── transformers/
+│   │   └── prediction_transformer.py
+│   │
+│   └── validation/
+│       ├── column_validator.py
+│       ├── data_quality.py
+│       ├── datatype_validator.py
+│       └── schema_validator.py
+│
+├── export/
+│   ├── exporters/
+│   │   ├── api_exporter.py
+│   │   ├── base_exporter.py
+│   │   ├── csv_exporter.py
+│   │   ├── database_exporter.py
+│   │   ├── excel_exporter.py
+│   │   ├── json_exporter.py
+│   │   └── parquet_exporter.py
+│   ├── export_factory.py
+│   └── export_service.py
+│
+├── integrations/
+│   ├── clients/
+│   │   ├── backend_client.py
+│   │   └── external_api_client.py
+│   └── webhooks/
+│       ├── prediction_webhook.py
+│       └── training_webhook.py
+│
+├── ml/
+│   ├── core/
+│   │   ├── base_model.py
+│   │   ├── model_config.py
+│   │   └── model_result.py
+│   │
+│   ├── evaluation/
+│   │   ├── backtester.py
+│   │   ├── evaluator.py
+│   │   └── metrics.py
+│   │
+│   ├── features/
+│   │   ├── calendar.py
+│   │   ├── external.py
+│   │   ├── feature_builder.py
+│   │   ├── lags.py
+│   │   ├── rolling.py
+│   │   └── seasonality.py
+│   │
+│   ├── models/
+│   │   ├── arima/
+│   │   ├── hybrid/
+│   │   ├── random_forest/
+│   │   └── xgboost/
+│   │
+│   ├── monitoring/
+│   │   ├── anomalies/
+│   │   └── drift/
+│   │
+│   ├── registry.py
+│   └── trainer.py
+│
+├── notifications/
+│   ├── channels/
+│   ├── core/
+│   ├── templates/
+│   └── notification_manager.py
+│
+├── reports/
+│   ├── generators/
+│   │   ├── base.py
+│   │   ├── excel_report.py
+│   │   ├── html_report.py
+│   │   └── pdf_report.py
+│   └── report_service.py
+│
+├── repositories/
+│   ├── dataset_repository.py
+│   ├── model_repository.py
+│   ├── notification_repository.py
+│   └── training_repository.py
+│
+├── schemas/
+│   ├── dataset.py
+│   ├── export.py
+│   ├── feriado.py
+│   ├── forecast.py
+│   ├── import_data.py
+│   ├── model.py
+│   ├── notification.py
+│   ├── prediction.py
+│   ├── report.py
+│   └── training.py
+│
+├── security/
+│   ├── dependencies.py
+│   ├── jwt.py
+│   └── permissions.py
+│
+├── services/
+│   ├── dataset_service.py
+│   ├── feriado_service.py
+│   ├── forecast_service.py
+│   ├── import_service.py
+│   ├── model_evaluation_service.py
+│   ├── notification_service.py
+│   ├── prediction_service.py
+│   ├── sync_service.py
+│   └── training_service.py
+│
+├── utils/
+│   └── logger.py
+│
+└── main.py
+
+storage/
+├── exports/
+└── reports/
+
+
+requirements.txt
+README.md
+STRUCTURE.txt
