@@ -2,6 +2,7 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Query,
 )
 
 from sqlalchemy.orm import Session
@@ -18,6 +19,10 @@ from app.schemas.training import (
     TrainingRequest,
     TrainingResponse,
     TrainingRunResponse,
+)
+
+from app.security.dependencies import (
+    user_can_manage_all_datasets,
 )
 
 from app.security.permissions import (
@@ -67,7 +72,8 @@ def create_training(
             date_column=payload.date_column,
             target_column=payload.target_column,
             model_names=payload.model_names,
-            test_ratio=payload.test_ratio
+            test_ratio=payload.test_ratio,
+            allow_all_users=user_can_manage_all_datasets(db, current_user.id),
         )
     )
 
@@ -141,6 +147,10 @@ def create_training(
     ]
 )
 def get_trainings(
+    dataset_id: int | None = Query(
+        default=None
+    ),
+
     current_user=Depends(
         require_permission(
             Permissions.MODELS_VIEW
@@ -151,6 +161,15 @@ def get_trainings(
         get_db
     )
 ):
+    if dataset_id is not None:
+
+        return (
+            TrainingRepository.get_by_dataset(
+                db,
+                dataset_id
+            )
+        )
+
     return (
         TrainingRepository.get_all(
             db

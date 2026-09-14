@@ -42,6 +42,8 @@ class TrainingRequest(BaseModel):
         le=0.40
     )
 
+    allow_all_users: bool = False
+
     @field_validator(
         "model_names"
     )
@@ -86,6 +88,32 @@ class TrainingRequest(BaseModel):
         return normalized
 
 
+class TrainingModelSelection(BaseModel):
+
+    metric: str
+
+    source: str
+
+    value: float
+
+
+class TrainingModelBacktesting(BaseModel):
+
+    strategy: str | None = None
+
+    horizon: int | None = None
+
+    step: int | None = None
+
+    successful_folds: int | None = None
+
+    failed_folds: int | None = None
+
+    mean_metrics: dict[str, Any] | None = None
+
+    std_metrics: dict[str, Any] | None = None
+
+
 class TrainingModelResult(BaseModel):
 
     training_id: int
@@ -107,6 +135,12 @@ class TrainingModelResult(BaseModel):
         Any
     ]
 
+    backtesting: TrainingModelBacktesting | None = None
+
+    backtesting_error: str | None = None
+
+    selection: TrainingModelSelection
+
     ranking_position: int
 
     is_best_model: bool
@@ -125,6 +159,10 @@ class TrainingRunResponse(BaseModel):
     winner_model_id: int
 
     ranking: list[str]
+
+    ranking_metric: str
+
+    winner_selection_rmse: float
 
     results: list[
         TrainingModelResult

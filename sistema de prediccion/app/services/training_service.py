@@ -117,7 +117,8 @@ class TrainingService:
         date_column: str | None,
         target_column: str | None,
         model_names: list[str],
-        test_ratio: float
+        test_ratio: float,
+        allow_all_users: bool = False,
     ) -> dict:
 
         # ==========================================
@@ -138,7 +139,10 @@ class TrainingService:
                 detail="Dataset no encontrado"
             )
 
-        if dataset.user_id != user_id:
+        if (
+            not allow_all_users
+            and dataset.user_id != user_id
+        ):
 
             raise HTTPException(
                 status_code=403,
