@@ -15,7 +15,8 @@ from app.schemas.dataset_validation import (
 
 from app.security.permissions import (
     Permissions,
-    require_permission
+    require_permission,
+    user_can_manage_all_datasets,
 )
 
 from app.services.dataset_validation_service import (
@@ -56,6 +57,7 @@ def validate_dataset(
         service.validate_dataset(
             db=db,
             dataset_id=dataset_id,
-            user_id=current_user.id
+            user_id=current_user.id,
+            allow_all_users=user_can_manage_all_datasets(db, current_user.id),
         )
     )

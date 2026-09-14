@@ -33,7 +33,8 @@ class DatasetValidationService:
         self,
         db: Session,
         dataset_id: int,
-        user_id: int
+        user_id: int,
+        allow_all_users: bool = False
     ) -> dict:
 
         dataset = (
@@ -53,8 +54,8 @@ class DatasetValidationService:
             )
 
         if (
-            dataset.user_id
-            != user_id
+            not allow_all_users
+            and dataset.user_id != user_id
         ):
             raise HTTPException(
                 status_code=403,

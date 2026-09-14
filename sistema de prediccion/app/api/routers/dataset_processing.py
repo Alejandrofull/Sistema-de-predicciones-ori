@@ -17,6 +17,7 @@ from app.schemas.dataset_processing import (
 from app.security.permissions import (
     Permissions,
     require_permission,
+    user_can_manage_all_datasets,
 )
 
 from app.services.audit_service import (
@@ -37,10 +38,6 @@ service = (
     DatasetProcessingService()
 )
 
-
-# ==========================================
-# PROCESAR DATASET
-# ==========================================
 
 @router.post(
     "/{dataset_id}/process",
@@ -87,6 +84,7 @@ def process_dataset(
             rolling_windows=(
                 payload.rolling_windows
             ),
+            allow_all_users=user_can_manage_all_datasets(db, current_user.id),
         )
     )
 

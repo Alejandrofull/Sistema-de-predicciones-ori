@@ -7,17 +7,11 @@ from pydantic import BaseModel
 class AuditLogResponse(BaseModel):
 
     id: int
-
     user_id: int | None
-
     action: str
-
     entity: str | None
-
     entity_id: str | None
-
     details: str | None
-
     created_at: datetime
 
     model_config = {
@@ -25,36 +19,22 @@ class AuditLogResponse(BaseModel):
     }
 
 
-class AuditLogDetailResponse(
-    BaseModel
-):
+class AuditLogDetailResponse(BaseModel):
 
     id: int
-
     user_id: int | None
-
+    user_email: str | None
     action: str
-
     entity: str | None
-
     entity_id: str | None
-
-    details: (
-        dict[str, Any]
-        | list
-        | str
-        | None
-    )
-
+    details: dict[str, Any] | list | str | None
     created_at: datetime
 
 
-class AuditSummaryResponse(
-    BaseModel
-):
+class AuditSummaryResponse(BaseModel):
 
     total_returned: int
-
-    logs: list[
-        AuditLogDetailResponse
-    ]
+    total_count: int
+    limit: int
+    offset: int
+    logs: list[AuditLogDetailResponse]

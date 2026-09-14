@@ -79,7 +79,8 @@ class DatasetProcessingService:
         fill_missing_target: bool,
         generate_features: bool,
         lags: list[int],
-        rolling_windows: list[int]
+        rolling_windows: list[int],
+        allow_all_users: bool = False
     ) -> dict:
 
         dataset = (
@@ -96,7 +97,10 @@ class DatasetProcessingService:
                 detail="Dataset no encontrado"
             )
 
-        if dataset.user_id != user_id:
+        if (
+            not allow_all_users
+            and dataset.user_id != user_id
+        ):
 
             raise HTTPException(
                 status_code=403,

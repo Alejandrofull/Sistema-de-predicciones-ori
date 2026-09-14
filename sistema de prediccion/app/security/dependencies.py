@@ -17,6 +17,9 @@ from app.repositories.user_repository import (
     UserRepository
 )
 from app.security.jwt import decode_token
+from app.services.authorization_service import (
+    AuthorizationService
+)
 
 
 bearer_scheme = HTTPBearer()
@@ -86,3 +89,20 @@ def get_current_user(
     )
 
     return user
+
+
+def user_can_manage_all_datasets(
+    db: Session,
+    user_id: int
+) -> bool:
+    # Import diferido para evitar import circular:
+    # permissions.py importa de este archivo (require_permission usa
+    # get_current_user), así que Permissions no se puede importar
+    # a nivel de módulo aquí arriba.
+    from app.security.permissions import Permissions
+
+    return AuthorizationService.has_permission(
+        db=db,
+        user_id=user_id,
+        permission_code=Permissions.DATASETS_MANAGE_ALL,
+    )

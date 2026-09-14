@@ -46,6 +46,7 @@ class Permissions:
     DATASETS_VIEW = "datasets.view"
     DATASETS_PROCESS = "datasets.process"
     DATASETS_DELETE = "datasets.delete"
+    DATASETS_MANAGE_ALL = "datasets.manage_all"
 
     # ==========================================
     # BUSINESS SERIES
@@ -329,3 +330,18 @@ def require_all_permissions(
         return current_user
 
     return dependency
+
+
+# ==========================================
+# HELPER: check without blocking the route
+# ==========================================
+
+def user_can_manage_all_datasets(
+    db: Session,
+    user_id: int
+) -> bool:
+    return AuthorizationService.has_permission(
+        db=db,
+        user_id=user_id,
+        permission_code=Permissions.DATASETS_MANAGE_ALL
+    )

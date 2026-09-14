@@ -14,6 +14,10 @@ from app.schemas.series_extraction import (
     SeriesExtractionResponse,
 )
 
+from app.security.dependencies import (
+    user_can_manage_all_datasets,
+)
+
 from app.security.permissions import (
     Permissions,
     require_permission,
@@ -37,10 +41,6 @@ service = (
     SeriesExtractionService()
 )
 
-
-# ==========================================
-# EXTRAER SERIES
-# ==========================================
 
 @router.post(
     "/{dataset_id}/extract-series",
@@ -85,6 +85,7 @@ def extract_series(
                 payload
                 .minimum_observations
             ),
+            allow_all_users=user_can_manage_all_datasets(db, current_user.id),
         )
     )
 

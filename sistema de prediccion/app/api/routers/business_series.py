@@ -223,7 +223,7 @@ def get_business_series_datasets(
 
     current_user=Depends(
         require_permission(
-            Permissions.DATASETS_VIEW
+            Permissions.BUSINESS_SERIES_VIEW
         )
     ),
 
@@ -259,14 +259,7 @@ def get_business_series_datasets(
         )
     )
 
-    return [
-        dataset
-        for dataset in datasets
-        if (
-            dataset.user_id
-            == current_user.id
-        )
-    ]
+    return datasets
 
 
 @router.put(

@@ -1,3 +1,5 @@
+import os
+
 from contextlib import (
     asynccontextmanager,
 )
@@ -6,6 +8,8 @@ from fastapi import (
     FastAPI,
     status,
 )
+
+from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.responses import (
     JSONResponse,
@@ -183,6 +187,45 @@ app = FastAPI(
         "y soporte a la gestión de inventarios."
     ),
     lifespan=lifespan
+)
+
+
+# ==========================================
+# CORS
+# ==========================================
+# Los orígenes permitidos se leen desde la
+# variable de entorno CORS_ORIGINS, separados
+# por comas. Así se puede tener una config
+# distinta en local, staging y producción sin
+# tocar el código.
+#
+# Ejemplo en .env (desarrollo):
+#   CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+#
+# Ejemplo en producción (Render, etc.):
+#   CORS_ORIGINS=https://tu-frontend.vercel.app,https://tu-dominio.com
+
+cors_origins_env = os.getenv("CORS_ORIGINS", "")
+
+cors_origins = [
+    origin.strip()
+    for origin in cors_origins_env.split(",")
+    if origin.strip()
+]
+
+if not cors_origins:
+    # Fallback de desarrollo si no se define la variable.
+    cors_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

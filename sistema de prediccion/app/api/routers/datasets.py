@@ -23,6 +23,7 @@ from app.schemas.dataset import (
 from app.security.permissions import (
     Permissions,
     require_permission,
+    user_can_manage_all_datasets,
 )
 
 from app.services.audit_service import (
@@ -62,6 +63,9 @@ def get_datasets(
         get_db
     ),
 ):
+
+    if user_can_manage_all_datasets(db, current_user.id):
+        return DatasetRepository.get_all(db=db)
 
     return (
         DatasetRepository
@@ -108,8 +112,8 @@ def get_dataset(
         )
 
     if (
-        dataset.user_id
-        != current_user.id
+        dataset.user_id != current_user.id
+        and not user_can_manage_all_datasets(db, current_user.id)
     ):
 
         raise HTTPException(
@@ -150,6 +154,7 @@ def download_dataset(
             db=db,
             dataset_id=dataset_id,
             user_id=current_user.id,
+            allow_all_users=user_can_manage_all_datasets(db, current_user.id),
         )
     )
 
@@ -175,9 +180,6 @@ def delete_dataset(
         get_db
     ),
 ):
-
-    # Guardamos metadata mínima antes
-    # de eliminar el registro.
 
     dataset = (
         DatasetRepository
@@ -209,6 +211,7 @@ def delete_dataset(
         db=db,
         dataset_id=dataset_id,
         user_id=current_user.id,
+        allow_all_users=user_can_manage_all_datasets(db, current_user.id),
     )
 
     AuditService.log_safe(
