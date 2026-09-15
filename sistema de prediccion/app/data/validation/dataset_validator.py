@@ -331,9 +331,14 @@ class DatasetValidator:
                 if sample.empty:
                     continue
 
+                # dayfirst=True: nuestras fechas son día/mes/año
+                # (ej. "02/04/2026" = 2 de abril). Sin esto, pandas
+                # asume mes/día/año y para días <=12 malinterpreta
+                # la fecha sin avisar.
                 parsed = pd.to_datetime(
                     sample,
-                    errors="coerce"
+                    errors="coerce",
+                    dayfirst=True
                 )
 
                 ratio = float(
@@ -399,11 +404,15 @@ class DatasetValidator:
             ValidationIssue
         ] = []
 
+        # dayfirst=True: mismo motivo que en detect_date_column.
+        # Fechas como "02/04/2026" deben leerse como 2 de abril,
+        # no como 4 de febrero.
         parsed = pd.to_datetime(
             dataframe[
                 column
             ],
-            errors="coerce"
+            errors="coerce",
+            dayfirst=True
         )
 
         invalid_count = int(

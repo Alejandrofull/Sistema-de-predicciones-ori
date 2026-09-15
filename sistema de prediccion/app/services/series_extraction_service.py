@@ -1,3 +1,5 @@
+import unicodedata
+
 from pathlib import Path
 from tempfile import (
     NamedTemporaryFile,
@@ -60,7 +62,8 @@ class SeriesExtractionService:
         target_column: str,
         entity_type: str,
         aggregation: str,
-        minimum_observations: int
+        minimum_observations: int,
+        allow_all_users: bool = False,
     ) -> dict:
 
         source_dataset = (
@@ -80,8 +83,8 @@ class SeriesExtractionService:
             )
 
         if (
-            source_dataset.user_id
-            != user_id
+            source_dataset.user_id != user_id
+            and not allow_all_users
         ):
 
             raise HTTPException(
@@ -807,6 +810,12 @@ class SeriesExtractionService:
         value: str
     ) -> str:
 
+        normalized = (
+            unicodedata.normalize("NFKD", value.strip())
+            .encode("ascii", "ignore")
+            .decode("ascii")
+        )
+
         safe = "".join(
             character
             if (
@@ -819,7 +828,7 @@ class SeriesExtractionService:
             )
             else "_"
             for character
-            in value.strip()
+            in normalized
         )
 
         safe = (
