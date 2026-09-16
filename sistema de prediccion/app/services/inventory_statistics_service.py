@@ -968,6 +968,44 @@ class InventoryStatisticsService:
         alpha: float
     ) -> dict:
 
+        differences = (
+            post_values
+            -
+            pre_values
+        )
+
+        # Si absolutamente todos los pares son
+        # iguales, la varianza de las diferencias
+        # es 0 y la t de Student calcula 0/0 (nan).
+        # No hay nada que probar: el indicador no
+        # varió entre PRE y POST.
+        if np.allclose(
+            differences,
+            0.0
+        ):
+
+            return {
+                "test": (
+                    "t de Student para "
+                    "muestras relacionadas"
+                ),
+                "statistic": 0.0,
+                "p_value": 1.0,
+                "alpha": float(
+                    alpha
+                ),
+                "significant": False,
+                "alternative": (
+                    "two-sided"
+                ),
+                "interpretation": (
+                    "Todas las diferencias "
+                    "PRE-POST son iguales a "
+                    "cero; no existe evidencia "
+                    "de diferencia entre fases."
+                )
+            }
+
         statistic, p_value = (
             stats.ttest_rel(
                 pre_values,
@@ -1306,6 +1344,31 @@ class InventoryStatisticsService:
                 "p_value"
             )
         )
+
+        statistic = (
+            test_result.get(
+                "statistic"
+            )
+        )
+
+        # Caso especial: el indicador no tuvo
+        # ninguna variación entre PRE y POST
+        # (ambos guards de t-test/Wilcoxon
+        # devuelven statistic=0.0 y p_value=1.0
+        # cuando todas las diferencias son cero).
+        if (
+            direction == "stable"
+            and statistic == 0.0
+            and p_value == 1.0
+        ):
+
+            return (
+                f"{change_text} El indicador "
+                f"'{label}' se mantuvo exactamente "
+                f"igual entre las fases PRE y POST, "
+                f"sin ninguna variación registrada "
+                f"en los pares evaluados."
+            )
 
         if (
             significant is True

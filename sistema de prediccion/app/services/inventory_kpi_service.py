@@ -615,6 +615,23 @@ class InventoryKPIService:
     # ==========================================
     # REDUCCIÓN %
     # ==========================================
+    #
+    # NOTA (fix): si la base PRE es 0 y el POST pasa
+    # a tener un valor positivo (ej. aparecieron
+    # quiebres de stock que antes no existían), ya
+    # no se devuelve None ("—" en el frontend, que
+    # ocultaba el cambio). Se devuelve -100.0 para
+    # mantener la misma convención de signo que el
+    # resto del sistema (negativo = empeoró), y así
+    # el cambio real queda visible en la UI.
+    #
+    # Limitación conocida: -100.0 no distingue si
+    # el POST pasó a valer 1 o 1000 respecto de una
+    # base 0 — en ambos casos se muestra igual. Si
+    # se necesita esa granularidad, conviene mostrar
+    # también el valor absoluto (unidades) junto al
+    # porcentaje en la UI.
+    # ==========================================
 
     @staticmethod
     def _reduction_percent(
@@ -627,7 +644,7 @@ class InventoryKPIService:
             if after == 0:
                 return 0.0
 
-            return None
+            return -100.0
 
         return float(
             (

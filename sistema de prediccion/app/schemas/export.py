@@ -5,10 +5,14 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class ExportRequest(BaseModel):
-    records: list[dict[str, Any]] = Field(
+    source: str = Field(
         ...,
-        min_length=1,
-        description="Registros que serán exportados"
+        description="Clave de la fuente de datos a exportar (ej: 'usuarios', 'ventas')"
+    )
+
+    filters: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Filtros específicos de la fuente elegida"
     )
 
     export_format: str = Field(
@@ -25,23 +29,14 @@ class ExportRequest(BaseModel):
 
     @field_validator("export_format")
     @classmethod
-    def validate_export_format(
-        cls,
-        value: str
-    ) -> str:
+    def validate_export_format(cls, value: str) -> str:
         value = value.lower().strip()
 
-        allowed_formats = {
-            "csv",
-            "xlsx",
-            "excel",
-            "json"
-        }
+        allowed_formats = {"csv", "xlsx", "excel", "json"}
 
         if value not in allowed_formats:
             raise ValueError(
-                "Formato de exportación no soportado. "
-                "Use: csv, xlsx o json."
+                "Formato de exportación no soportado. Use: csv, xlsx o json."
             )
 
         if value == "excel":
@@ -51,89 +46,63 @@ class ExportRequest(BaseModel):
 
     @field_validator("filename")
     @classmethod
-    def validate_filename(
-        cls,
-        value: str
-    ) -> str:
+    def validate_filename(cls, value: str) -> str:
         value = value.strip()
 
         if not value:
-            raise ValueError(
-                "El nombre del archivo no puede estar vacío"
-            )
+            raise ValueError("El nombre del archivo no puede estar vacío")
 
-        forbidden_characters = {
-            "/",
-            "\\",
-            ":",
-            "*",
-            "?",
-            '"',
-            "<",
-            ">",
-            "|"
-        }
+        forbidden_characters = {"/", "\\", ":", "*", "?", '"', "<", ">", "|"}
 
-        if any(
-            character in value
-            for character in forbidden_characters
-        ):
-            raise ValueError(
-                "El nombre del archivo contiene "
-                "caracteres no permitidos"
-            )
+        if any(character in value for character in forbidden_characters):
+            raise ValueError("El nombre del archivo contiene caracteres no permitidos")
 
-        # Quitar extensión en caso de que
-        # el usuario la escriba manualmente
         lower_value = value.lower()
-
-        for extension in (
-            ".csv",
-            ".xlsx",
-            ".xls",
-            ".json"
-        ):
+        for extension in (".csv", ".xlsx", ".xls", ".json"):
             if lower_value.endswith(extension):
-                value = value[
-                    :-len(extension)
-                ]
+                value = value[: -len(extension)]
                 break
 
         if not value.strip():
-            raise ValueError(
-                "El nombre del archivo no es válido"
-            )
+            raise ValueError("El nombre del archivo no es válido")
 
         return value.strip()
 
 
+class ExportPreviewRequest(BaseModel):
+    source: str
+    filters: dict[str, Any] = Field(default_factory=dict)
+    limit: int = Field(default=20, ge=1, le=200)
+
+
+class ExportPreviewResponse(BaseModel):
+    columns: list[str]
+    rows: list[dict[str, Any]]
+    total: int
+
+
+class ExportSourceInfo(BaseModel):
+    key: str
+    label: str
+    filters: list[dict[str, Any]]
+
+
 class ExportResponse(BaseModel):
     id: int
-
     user_id: int
-
     filename: str
-
     export_format: str
-
     storage_path: str
-
     status: str
-
     created_at: datetime
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}
 
 
 class ExportDownloadResponse(BaseModel):
     id: int
-
     filename: str
-
     download_url: str
-
     expires_in: int
 
 
@@ -143,5 +112,4 @@ class ExportDeleteResponse(BaseModel):
 
 class ExportListResponse(BaseModel):
     exports: list[ExportResponse]
-
     total: int
