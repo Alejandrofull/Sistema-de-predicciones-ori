@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.role_permission import RolePermission
+from app.models.user import User
 from app.models.user_role import UserRole
 
 
@@ -25,6 +26,33 @@ class AuthorizationService:
                 Role.is_active.is_(True)
             )
             .order_by(Role.id)
+        )
+
+        return list(
+            db.scalars(statement).all()
+        )
+
+    @staticmethod
+    def get_user_ids_by_role(
+        db: Session,
+        role: str
+    ) -> list[int]:
+        statement = (
+            select(UserRole.user_id)
+            .join(
+                Role,
+                Role.id == UserRole.role_id
+            )
+            .join(
+                User,
+                User.id == UserRole.user_id
+            )
+            .where(
+                Role.code == role,
+                Role.is_active.is_(True),
+                User.is_active.is_(True)
+            )
+            .distinct()
         )
 
         return list(

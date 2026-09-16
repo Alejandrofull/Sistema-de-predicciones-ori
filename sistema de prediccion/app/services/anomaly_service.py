@@ -43,7 +43,14 @@ class AnomalyService:
         minimum_observations: int,
         z_threshold: float,
         iqr_multiplier: float
-    ) -> dict:
+    ) -> tuple[dict, list]:
+        """
+        Método síncrono (SQLAlchemy sync). NO despacha notificaciones:
+        solo las crea en base de datos y las devuelve para que el
+        caller (router, async) las despache con `await` real.
+
+        Retorna (result, notifications_to_dispatch).
+        """
 
         if business_series_id is not None:
 
@@ -120,7 +127,7 @@ class AnomalyService:
             < minimum_observations
         ):
 
-            return {
+            result = {
                 "business_series_id": (
                     business_series_id
                 ),
@@ -138,6 +145,8 @@ class AnomalyService:
                 "notifications_created": 0,
                 "anomalies": []
             }
+
+            return result, []
 
         predicted_values = [
             float(
@@ -177,6 +186,8 @@ class AnomalyService:
         )
 
         created_anomalies = []
+
+        notifications_to_dispatch = []
 
         existing_count = 0
         notifications_created = 0
@@ -315,16 +326,22 @@ class AnomalyService:
                     anomaly
                 )
 
-                self._create_notification(
-                    db=db,
-                    anomaly=anomaly,
-                    prediction=prediction,
-                    result=result
+                notification = (
+                    self._create_notification(
+                        db=db,
+                        anomaly=anomaly,
+                        prediction=prediction,
+                        result=result
+                    )
+                )
+
+                notifications_to_dispatch.append(
+                    notification
                 )
 
                 notifications_created += 1
 
-        return {
+        result = {
             "business_series_id": (
                 business_series_id
             ),
@@ -357,13 +374,19 @@ class AnomalyService:
             )
         }
 
+        return result, notifications_to_dispatch
+
     @staticmethod
     def _create_notification(
         db: Session,
         anomaly,
         prediction,
         result
-    ) -> None:
+    ):
+        """
+        Crea (persiste) la notificación y la devuelve SIN despacharla.
+        El dispatch (push/websocket) queda a cargo del caller async.
+        """
 
         series_name = None
 
@@ -437,7 +460,7 @@ class AnomalyService:
             "desempeño del modelo."
         )
 
-        NotificationRepository.create(
+        return NotificationRepository.create(
             db=db,
             user_id=(
                 prediction.user_id

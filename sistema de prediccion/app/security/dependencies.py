@@ -25,15 +25,10 @@ from app.services.authorization_service import (
 bearer_scheme = HTTPBearer()
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(
-        bearer_scheme
-    ),
-    db: Session = Depends(get_db)
+def authenticate_token(
+    token: str,
+    db: Session
 ):
-
-    token = credentials.credentials
-
     try:
         payload = decode_token(token)
     except Exception:
@@ -89,6 +84,18 @@ def get_current_user(
     )
 
     return user
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(
+        bearer_scheme
+    ),
+    db: Session = Depends(get_db)
+):
+    return authenticate_token(
+        credentials.credentials,
+        db
+    )
 
 
 def user_can_manage_all_datasets(

@@ -5,6 +5,8 @@ from fastapi import (
     Query,
 )
 
+from fastapi.concurrency import run_in_threadpool
+
 from sqlalchemy.orm import Session
 
 from app.database.session import (
@@ -34,6 +36,10 @@ from app.services.audit_service import (
     AuditService,
 )
 
+from app.services.notification_dispatch_service import (
+    NotificationDispatchService,
+)
+
 from app.services.training_service import (
     TrainingService,
 )
@@ -51,7 +57,7 @@ service = TrainingService()
     "",
     response_model=TrainingRunResponse
 )
-def create_training(
+async def create_training(
     payload: TrainingRequest,
 
     current_user=Depends(
@@ -64,20 +70,31 @@ def create_training(
         get_db
     )
 ):
-    result = (
-        service.train_models(
-            db=db,
-            dataset_id=payload.dataset_id,
-            user_id=current_user.id,
-            date_column=payload.date_column,
-            target_column=payload.target_column,
-            model_names=payload.model_names,
-            test_ratio=payload.test_ratio,
-            allow_all_users=user_can_manage_all_datasets(db, current_user.id),
-        )
+    # train_models es síncrona (SQLAlchemy sync, I/O de storage,
+    # entrenamiento de modelos); se corre en threadpool para no
+    # bloquear el event loop. Ya no dispatcha notificaciones por
+    # dentro: solo las crea y las devuelve.
+    result, notifications_to_dispatch = await run_in_threadpool(
+        service.train_models,
+        db=db,
+        dataset_id=payload.dataset_id,
+        user_id=current_user.id,
+        date_column=payload.date_column,
+        target_column=payload.target_column,
+        model_names=payload.model_names,
+        test_ratio=payload.test_ratio,
+        allow_all_users=user_can_manage_all_datasets(db, current_user.id),
     )
 
-    AuditService.log_safe(
+    for notification in notifications_to_dispatch:
+
+        await NotificationDispatchService.dispatch(
+            db=db,
+            notification=notification
+        )
+
+    await run_in_threadpool(
+        AuditService.log_safe,
         db=db,
         user_id=current_user.id,
         action="model.train",

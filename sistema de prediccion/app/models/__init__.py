@@ -8,6 +8,8 @@ from app.models.dataset_external_variables import (
     DatasetExternalVariable,
 )
 
+from app.models.push_subscription import PushSubscription
+
 from app.models.export import Export
 
 from app.models.external_variable import ExternalVariable

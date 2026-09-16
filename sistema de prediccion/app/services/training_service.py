@@ -25,6 +25,14 @@ from app.ml.trainer import (
     ModelTrainer,
 )
 
+from app.notifications.core.notification import (
+    Notification,
+)
+
+from app.notifications.templates.training_completed import (
+    training_completed,
+)
+
 from app.repositories.dataset_repository import (
     DatasetRepository,
 )
@@ -39,6 +47,10 @@ from app.repositories.model_repository import (
 
 from app.repositories.model_version_repository import (
     ModelVersionRepository,
+)
+
+from app.repositories.notification_repository import (
+    NotificationRepository,
 )
 
 from app.repositories.training_repository import (
@@ -119,7 +131,14 @@ class TrainingService:
         model_names: list[str],
         test_ratio: float,
         allow_all_users: bool = False,
-    ) -> dict:
+    ) -> tuple[dict, list]:
+        """
+        Método síncrono (SQLAlchemy sync). NO despacha notificaciones:
+        solo las crea en base de datos y las devuelve para que el
+        caller (router, async) las despache con `await` real.
+
+        Retorna (result, notifications_to_dispatch).
+        """
 
         # ==========================================
         # 1. DATASET
@@ -1270,7 +1289,7 @@ class TrainingService:
         # 16. RESPUESTA
         # ==========================================
 
-        return {
+        response = {
             "dataset_id": (
                 dataset.id
             ),
@@ -1306,6 +1325,91 @@ class TrainingService:
                 errors
             )
         }
+
+        # ==========================================
+        # 17. NOTIFICACIÓN (creada, NO despachada)
+        #
+        # Se notifica solo el ganador del run.
+        # El dispatch async queda a cargo del
+        # caller (router).
+        # ==========================================
+
+        notification = training_completed(
+            training_id=(
+                winner_item["training"].id
+            ),
+            model_name=winner,
+            metrics=(
+                self._serialize_metrics(
+                    winner_item["metrics"]
+                )
+            ),
+            duration_seconds=(
+                winner_item["elapsed"]
+            ),
+        )
+
+        persisted_notification = (
+            self._persist_notification(
+                db=db,
+                notification=notification
+            )
+        )
+
+        notifications_to_dispatch = [
+            persisted_notification
+        ]
+
+        return response, notifications_to_dispatch
+
+    # ==========================================
+    # PERSISTIR NOTIFICACIÓN (dataclass -> modelo)
+    # ==========================================
+
+    @staticmethod
+    def _persist_notification(
+        db: Session,
+        notification: Notification
+    ):
+        """
+        Convierte el dataclass Notification (app.notifications.core)
+        en argumentos de NotificationRepository.create y persiste.
+        NO despacha — el caller async se encarga de eso.
+        """
+
+        return NotificationRepository.create(
+            db=db,
+            user_id=(
+                notification.recipient_user_id
+            ),
+            recipient_role=(
+                notification.recipient_role
+            ),
+            category=(
+                notification.category.value
+            ),
+            notification_type=(
+                notification.notification_type.value
+            ),
+            title=notification.title,
+            message=notification.message,
+            priority=(
+                notification.priority.value
+            ),
+            requires_action=(
+                notification.requires_action
+            ),
+            suggested_action=(
+                notification.suggested_action
+            ),
+            entity_type=(
+                notification.entity_type
+            ),
+            entity_id=(
+                notification.entity_id
+            ),
+            payload=notification.payload,
+        )
 
     # ==========================================
     # CONFIG BACKTESTING PARA JSON

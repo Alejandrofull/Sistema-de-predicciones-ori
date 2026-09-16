@@ -4,6 +4,7 @@ from fastapi import (
     HTTPException,
     Query,
 )
+from fastapi.concurrency import run_in_threadpool
 
 from sqlalchemy.orm import Session
 
@@ -34,6 +35,10 @@ from app.services.audit_service import (
     AuditService,
 )
 
+from app.services.notification_dispatch_service import (
+    NotificationDispatchService,
+)
+
 
 router = APIRouter(
     prefix="/anomalies",
@@ -49,7 +54,7 @@ service = AnomalyService()
         AnomalyDetectionResponse
     )
 )
-def scan_anomalies(
+async def scan_anomalies(
     business_series_id: int | None = Query(
         default=None,
         gt=0
@@ -94,27 +99,37 @@ def scan_anomalies(
         get_db
     )
 ):
-    result = (
-        service.scan_prediction_errors(
-            db=db,
-            business_series_id=(
-                business_series_id
-            ),
-            model_id=model_id,
-            limit=limit,
-            minimum_observations=(
-                minimum_observations
-            ),
-            z_threshold=(
-                z_threshold
-            ),
-            iqr_multiplier=(
-                iqr_multiplier
-            )
+    # scan_prediction_errors es síncrona (SQLAlchemy sync); se corre
+    # en threadpool para no bloquear el event loop. Ya no despacha
+    # notificaciones por dentro: solo las crea y las devuelve.
+    result, notifications_to_dispatch = await run_in_threadpool(
+        service.scan_prediction_errors,
+        db=db,
+        business_series_id=(
+            business_series_id
+        ),
+        model_id=model_id,
+        limit=limit,
+        minimum_observations=(
+            minimum_observations
+        ),
+        z_threshold=(
+            z_threshold
+        ),
+        iqr_multiplier=(
+            iqr_multiplier
         )
     )
 
-    AuditService.log_safe(
+    for notification in notifications_to_dispatch:
+
+        await NotificationDispatchService.dispatch(
+            db=db,
+            notification=notification
+        )
+
+    await run_in_threadpool(
+        AuditService.log_safe,
         db=db,
         user_id=current_user.id,
         action="anomaly.scan",
