@@ -22,7 +22,12 @@ class InventoryObservationRepository:
         actual_demand: float,
         closing_stock: float,
         predicted_demand: float | None,
-        source_type: str
+        source_type: str,
+        waste_quantity: float | None = None,
+        max_operating_stock: float | None = None,
+        planned_quantity: float | None = None,
+        complete_requirements: int | None = None,
+        total_requirements: int | None = None,
     ) -> InventoryObservation:
 
         observation = InventoryObservation(
@@ -37,7 +42,12 @@ class InventoryObservationRepository:
             actual_demand=actual_demand,
             closing_stock=closing_stock,
             predicted_demand=predicted_demand,
-            source_type=source_type
+            source_type=source_type,
+            waste_quantity=waste_quantity,
+            max_operating_stock=max_operating_stock,
+            planned_quantity=planned_quantity,
+            complete_requirements=complete_requirements,
+            total_requirements=total_requirements,
         )
 
         db.add(observation)

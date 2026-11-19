@@ -56,6 +56,10 @@ class ThesisReportService:
         "closing_stock",
         "forecast_absolute_error",
         "forecast_ape",
+        "waste_units",
+        "rotation",
+        "availability",
+        "planned_quantity",
     ]
 
     PERFORMANCE_LIMIT = 200

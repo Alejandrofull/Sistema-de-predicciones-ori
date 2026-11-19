@@ -60,6 +60,8 @@ from app.api.routers.imports import (
     router as imports_router,
 )
 
+from app.api.routers.inventory_setup import router as inventory_setup_router
+
 from app.api.routers.inventory import (
     router as inventory_router,
 )
@@ -342,6 +344,8 @@ app.include_router(
 # ==========================================
 # INVENTORY
 # ==========================================
+
+app.include_router(inventory_setup_router, prefix="/api")
 
 app.include_router(
     inventory_router,

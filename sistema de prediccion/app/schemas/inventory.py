@@ -49,11 +49,25 @@ class InventoryObservationCreateRequest(
         ge=0
     )
 
+    waste_quantity: float | None = Field(default=None, ge=0)
+    max_operating_stock: float | None = Field(default=None, ge=0)
+    planned_quantity: float | None = Field(default=None, ge=0)
+    complete_requirements: int | None = Field(default=None, ge=0)
+    total_requirements: int | None = Field(default=None, ge=0)
+
     source_type: str = Field(
         default="manual",
         min_length=1,
         max_length=50
     )
+
+    @model_validator(mode="after")
+    def validate_requirements(self):
+        if ((self.complete_requirements is None) != (self.total_requirements is None)):
+            raise ValueError("Registra conjuntamente requerimientos completos y totales")
+        if self.total_requirements is not None and self.complete_requirements > self.total_requirements:
+            raise ValueError("Requerimientos completos no pueden superar los totales")
+        return self
 
     @field_validator("phase")
     @classmethod
@@ -113,6 +127,8 @@ class InventoryObservationCreateRequest(
             available
             -
             self.actual_demand
+            -
+            (self.waste_quantity or 0.0)
         )
 
         if self.closing_stock is None:
@@ -161,6 +177,12 @@ class InventoryObservationResponse(
 
     predicted_demand: float | None
 
+    waste_quantity: float | None
+    max_operating_stock: float | None
+    planned_quantity: float | None
+    complete_requirements: int | None
+    total_requirements: int | None
+
     source_type: str
 
     created_at: datetime
@@ -197,6 +219,11 @@ class InventoryPhaseKPI(BaseModel):
     average_stockout_units: float
 
     average_overstock_units: float
+
+    total_waste_units: float | None = None
+    rotation_ratio: float | None = None
+    availability_percent: float | None = None
+    total_planned_quantity: float | None = None
 
     forecast_mae: float | None
 

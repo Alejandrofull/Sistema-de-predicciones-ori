@@ -97,9 +97,12 @@ def create_inventory_observation(
             predicted_demand=(
                 payload.predicted_demand
             ),
-            source_type=(
-                payload.source_type
-            )
+            source_type=payload.source_type,
+            waste_quantity=payload.waste_quantity,
+            max_operating_stock=payload.max_operating_stock,
+            planned_quantity=payload.planned_quantity,
+            complete_requirements=payload.complete_requirements,
+            total_requirements=payload.total_requirements,
         )
     )
 

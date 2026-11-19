@@ -67,6 +67,11 @@ class InventoryObservationsExportSource(ExportSource):
                     "demanda_real": o.actual_demand,
                     "stock_final": o.closing_stock,
                     "demanda_pronosticada": o.predicted_demand,
+                    "merma": o.waste_quantity,
+                    "stock_maximo_operativo": o.max_operating_stock,
+                    "cantidad_planificada": o.planned_quantity,
+                    "requerimientos_completos": o.complete_requirements,
+                    "requerimientos_totales": o.total_requirements,
                     "origen": o.source_type,
                 }
                 for o in observations

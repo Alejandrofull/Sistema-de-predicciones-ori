@@ -460,7 +460,7 @@ class TrainingService:
 
                 result = (
                     self.trainer
-                    .train_and_evaluate(
+                    .evaluate_temporal_70_15_15(
                         dataframe=(
                             dataframe
                         ),
@@ -472,9 +472,6 @@ class TrainingService:
                         ),
                         model_name=(
                             model_name
-                        ),
-                        test_ratio=(
-                            test_ratio
                         )
                     )
                 )
@@ -524,7 +521,8 @@ class TrainingService:
                         self.trainer
                         .rolling_origin_backtest(
                             dataframe=(
-                                dataframe
+                                dataframe.sort_values(resolved_date_column)
+                                .iloc[:int(len(dataframe) * 0.85)].copy()
                             ),
                             date_column=(
                                 resolved_date_column
@@ -562,35 +560,15 @@ class TrainingService:
                 # ==================================
 
                 selection_rmse = float(
-                    holdout_rmse
+                    evaluation["validation_metrics"]["rmse"]
                 )
 
                 selection_source = (
-                    "holdout_rmse"
+                    "validation_rmse_70_15_15"
                 )
 
-                if backtest:
-
-                    mean_rmse = (
-                        backtest
-                        .get(
-                            "mean_metrics",
-                            {}
-                        )
-                        .get(
-                            "rmse"
-                        )
-                    )
-
-                    if mean_rmse is not None:
-
-                        selection_rmse = float(
-                            mean_rmse
-                        )
-
-                        selection_source = (
-                            "rolling_origin_mean_rmse"
-                        )
+                # Rolling-origin is diagnostic on the first 85% only.
+                # Selection uses the 15% validation set, never final test.
 
                 # ==================================
                 # TIEMPO TOTAL
@@ -827,7 +805,7 @@ class TrainingService:
                             dataset.id
                         ),
                         evaluation_type=(
-                            "holdout_temporal_"
+                            "chronological_70_15_15_"
                             "with_rolling_origin"
                         ),
                         mae=(
@@ -887,8 +865,10 @@ class TrainingService:
                             },
                             "holdout": {
                                 "strategy": (
-                                    "temporal_holdout"
+                                    "chronological_70_15_15"
                                 ),
+                                "validation_rows": evaluation["dataset"]["validation_rows"],
+                                "validation_metrics": self._serialize_metrics(evaluation["validation_metrics"]),
                                 "test_ratio": float(
                                     test_ratio
                                 ),

@@ -232,6 +232,10 @@ class InventoryImportService:
                         )
                     )
 
+                # Reuse global intervention cutoff even for CSV/XLS imports.
+                from app.services.inventory_intervention_service import resolve_phase
+                phase = resolve_phase(db, observation_date, phase)
+
                 # ==================================
                 # DUPLICADOS
                 # ==================================

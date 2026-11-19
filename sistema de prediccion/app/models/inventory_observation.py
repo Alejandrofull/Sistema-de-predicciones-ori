@@ -107,6 +107,13 @@ class InventoryObservation(Base):
         nullable=True
     )
 
+    # Operational measurements. Nullable for historical observations.
+    waste_quantity: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_operating_stock: Mapped[float | None] = mapped_column(Float, nullable=True)
+    planned_quantity: Mapped[float | None] = mapped_column(Float, nullable=True)
+    complete_requirements: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_requirements: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     source_type: Mapped[str] = mapped_column(
         String(50),
         default="manual",

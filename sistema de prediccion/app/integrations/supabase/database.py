@@ -3,14 +3,8 @@ from sqlalchemy import create_engine, text
 from app.config.settings import DATABASE_URL
 
 
-db_url = DATABASE_URL
-if db_url.startswith("postgresql://"):
-    db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
-elif db_url.startswith("postgresql+psycopg2://"):
-    db_url = db_url.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
-
 engine = create_engine(
-    db_url,
+    DATABASE_URL,
     pool_pre_ping=True
 )
 

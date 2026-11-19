@@ -64,3 +64,5 @@ from app.models.anomaly import Anomaly
 from app.models.inventory_observation import (
     InventoryObservation,
 )
+from app.models.inventory_intervention import InventoryIntervention
+from app.models.recipe_ingredient import RecipeIngredient

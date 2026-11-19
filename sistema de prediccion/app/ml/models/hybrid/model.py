@@ -36,8 +36,12 @@ class HybridDemandModel:
         xgb_parameters: dict[
             str,
             Any
-        ] | None = None
+        ] | None = None,
+        arima_weight: float = 0.5
     ):
+        if not 0.0 <= arima_weight <= 1.0:
+            raise ValueError("arima_weight debe estar entre 0 y 1")
+        self.arima_weight = arima_weight
         self.arima_order = (
             arima_order
         )
@@ -116,11 +120,9 @@ class HybridDemandModel:
             dtype=float
         )
 
-        residuals = (
-            y_clean
-            -
-            fitted_values
-        )
+        # The thesis defines a weighted ensemble of two demand forecasts.
+        # Train XGBoost on demand, NOT ARIMA residuals.
+        residuals = y_clean
 
         valid_mask = (
             np.isfinite(
@@ -204,9 +206,8 @@ class HybridDemandModel:
             )
 
         return (
-            arima_forecast
-            +
-            residual_forecast
+            self.arima_weight * arima_forecast
+            + (1.0 - self.arima_weight) * residual_forecast
         )
 
     def evaluate(
@@ -242,6 +243,8 @@ class HybridDemandModel:
         return {
             "model": self.model_name,
             "parameters": {
+                "arima_weight": self.arima_weight,
+                "ensemble_method": "weighted_average",
                 "arima_order": list(
                     self.arima_order
                 ),

@@ -26,6 +26,10 @@ class InventoryStatisticsService:
         "overstock_units": (
             "Unidades de sobrestock"
         ),
+        "waste_units": "Unidades de merma",
+        "rotation": "Rotación de inventario",
+        "availability": "Requerimientos completos (%)",
+        "planned_quantity": "Cantidad planificada",
         "service_level": (
             "Nivel de servicio"
         ),
@@ -43,6 +47,7 @@ class InventoryStatisticsService:
     LOWER_IS_BETTER = {
         "stockout_units",
         "overstock_units",
+        "waste_units",
         "closing_stock",
         "forecast_absolute_error",
         "forecast_ape",
@@ -50,6 +55,8 @@ class InventoryStatisticsService:
 
     HIGHER_IS_BETTER = {
         "service_level",
+        "rotation",
+        "availability",
     }
 
     # ==========================================
@@ -653,11 +660,23 @@ class InventoryStatisticsService:
             )
 
         if indicator == "overstock_units":
+            limit = observation.max_operating_stock
+            return max(float(observation.closing_stock) - limit, 0) if limit is not None else None
 
-            return max(
-                available - demand,
-                0.0
-            )
+        if indicator == "waste_units":
+            return float(observation.waste_quantity) if observation.waste_quantity is not None else None
+
+        if indicator == "planned_quantity":
+            return float(observation.planned_quantity) if observation.planned_quantity is not None else None
+
+        if indicator == "rotation":
+            average = (opening_stock + float(observation.closing_stock)) / 2
+            return min(available, demand) / average if average > 0 else None
+
+        if indicator == "availability":
+            total = observation.total_requirements
+            if not total: return None
+            return 100 * observation.complete_requirements / total
 
         if indicator == "service_level":
 

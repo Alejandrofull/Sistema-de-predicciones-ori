@@ -238,6 +238,42 @@ class ModelTrainer:
             )
         }
 
+    def evaluate_temporal_70_15_15(self, dataframe: pd.DataFrame, date_column: str,
+                                   target_column: str, model_name: str) -> dict[str, Any]:
+        """Chronological train/validation/test; test untouched until final evaluation."""
+        model_name = self._normalize_model_name(model_name)
+        df = self._prepare_dataframe(dataframe, date_column, target_column)
+        if len(df) < 40: raise ValueError("Se requieren al menos 40 filas para 70/15/15")
+        n = len(df)
+        train_end, val_end = int(n * 0.70), int(n * 0.85)
+        train, validation, test = df.iloc[:train_end], df.iloc[train_end:val_end], df.iloc[val_end:]
+        features = [] if model_name == "arima" else self._get_feature_columns(
+            df=df, date_column=date_column, target_column=target_column)
+        validation_result = self._evaluate_split(train_df=train, test_df=validation,
+            date_column=date_column, target_column=target_column, model_name=model_name,
+            feature_columns=features)
+        # Validation is used for model selection, never test outcomes.
+        test_result = self._evaluate_split(train_df=df.iloc[:val_end], test_df=test,
+            date_column=date_column, target_column=target_column, model_name=model_name,
+            feature_columns=features)
+        test_result["evaluation"]["dataset"] = {
+            "total_rows": n, "training_rows": len(train),
+            "validation_rows": len(validation), "testing_rows": len(test),
+            "test_ratio": len(test) / n, "date_column": date_column,
+            "target_column": target_column,
+            "evaluation_strategy": "chronological_70_15_15"}
+        test_result["evaluation"]["feature_columns"] = features
+        test_result["evaluation"]["validation_metrics"] = validation_result["evaluation"]["metrics"]
+        test_result["evaluation"]["test_dates"] = [str(d.date()) if hasattr(d, 'date') else str(d)
+                                                     for d in test[date_column]]
+        test_result["evaluation"]["actual_values"] = [float(v) for v in test[target_column]]
+        return {"model_object": test_result["model_object"],
+                "validation": validation_result["evaluation"],
+                "evaluation": test_result["evaluation"],
+                "split": {"strategy": "chronological_70_15_15", "train_rows": len(train),
+                          "validation_rows": len(validation), "test_rows": len(test),
+                          "validation_selection_metric": "rmse"}}
+
     # ==========================================
     # COMPARAR HOLDOUT
     #

@@ -1370,12 +1370,12 @@ class PredictionService:
             # ARIMA + RESIDUO
             # ======================================
 
+            arima_weight = getattr(model_object, "arima_weight", None)
             predicted_value = float(
-                arima_predictions[
-                    index
-                ]
-                +
-                residual_prediction
+                arima_predictions[index] + residual_prediction
+                if arima_weight is None
+                else arima_weight * arima_predictions[index]
+                     + (1.0 - arima_weight) * residual_prediction
             )
 
             if not np.isfinite(

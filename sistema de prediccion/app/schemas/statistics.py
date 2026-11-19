@@ -104,6 +104,7 @@ class StatisticalAnalysisRequest(BaseModel):
         supported = {
             "stockout_units", "overstock_units", "service_level",
             "closing_stock", "forecast_absolute_error", "forecast_ape",
+            "waste_units", "rotation", "availability", "planned_quantity",
         }
         normalized = []
         for value in values:

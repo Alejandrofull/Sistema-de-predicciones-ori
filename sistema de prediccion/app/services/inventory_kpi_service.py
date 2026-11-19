@@ -36,7 +36,12 @@ class InventoryKPIService:
         actual_demand: float,
         closing_stock: float,
         predicted_demand: float | None,
-        source_type: str
+        source_type: str,
+        waste_quantity: float | None = None,
+        max_operating_stock: float | None = None,
+        planned_quantity: float | None = None,
+        complete_requirements: int | None = None,
+        total_requirements: int | None = None,
     ):
 
         business_series = (
@@ -57,6 +62,8 @@ class InventoryKPIService:
                 )
             )
 
+        from app.services.inventory_intervention_service import resolve_phase
+        phase = resolve_phase(db, observation_date, phase)
         existing = (
             InventoryObservationRepository
             .get_existing(
@@ -82,6 +89,10 @@ class InventoryKPIService:
                 )
             )
 
+        if (complete_requirements is None) != (total_requirements is None):
+            raise HTTPException(status_code=422, detail="Especifica ambos campos de requerimientos")
+        if complete_requirements is not None and complete_requirements > total_requirements:
+            raise HTTPException(status_code=422, detail="Requerimientos completos exceden total")
         observation = (
             InventoryObservationRepository
             .create(
@@ -109,9 +120,12 @@ class InventoryKPIService:
                 predicted_demand=(
                     predicted_demand
                 ),
-                source_type=(
-                    source_type
-                )
+                source_type=source_type,
+                waste_quantity=waste_quantity,
+                max_operating_stock=max_operating_stock,
+                planned_quantity=planned_quantity,
+                complete_requirements=complete_requirements,
+                total_requirements=total_requirements,
             )
         )
 
@@ -202,9 +216,12 @@ class InventoryKPIService:
                     predicted_demand=(
                         item.predicted_demand
                     ),
-                    source_type=(
-                        item.source_type
-                    )
+                    source_type=item.source_type,
+                    waste_quantity=item.waste_quantity,
+                    max_operating_stock=item.max_operating_stock,
+                    planned_quantity=item.planned_quantity,
+                    complete_requirements=item.complete_requirements,
+                    total_requirements=item.total_requirements,
                 )
             )
 
@@ -400,6 +417,10 @@ class InventoryKPIService:
                 "average_closing_stock": 0.0,
                 "average_stockout_units": 0.0,
                 "average_overstock_units": 0.0,
+                "total_waste_units": None,
+                "rotation_ratio": None,
+                "availability_percent": None,
+                "total_planned_quantity": None,
                 "forecast_mae": None,
                 "forecast_mape": None
             }
@@ -413,6 +434,13 @@ class InventoryKPIService:
 
         total_closing_stock = 0.0
 
+        waste_values = []
+        overstock_measured = []
+        planned_values = []
+        requirements_complete = 0
+        requirements_total = 0
+        rotation_numerator = 0.0
+        rotation_denominator = 0.0
         stockout_events = 0
 
         forecast_absolute_errors = []
@@ -445,10 +473,22 @@ class InventoryKPIService:
                 0.0
             )
 
-            overstock_units = max(
-                available - demand,
-                0.0
-            )
+            # Sobrestock es exceso sobre el stock máximo operativo;
+            # sin umbral registrado, el KPI permanece no disponible.
+            maximum = observation.max_operating_stock
+            overstock_units = (max(float(observation.closing_stock) - maximum, 0.0)
+                               if maximum is not None else None)
+            if overstock_units is not None:
+                overstock_measured.append(overstock_units)
+            if observation.waste_quantity is not None:
+                waste_values.append(float(observation.waste_quantity))
+            if observation.planned_quantity is not None:
+                planned_values.append(float(observation.planned_quantity))
+            if observation.total_requirements is not None:
+                requirements_total += observation.total_requirements
+                requirements_complete += observation.complete_requirements
+            rotation_numerator += served
+            rotation_denominator += (float(observation.opening_stock) + float(observation.closing_stock)) / 2
 
             total_demand += demand
             total_available += available
@@ -458,9 +498,7 @@ class InventoryKPIService:
                 stockout_units
             )
 
-            total_overstock += (
-                overstock_units
-            )
+            total_overstock += overstock_units or 0.0
 
             total_closing_stock += float(
                 observation.closing_stock
@@ -555,6 +593,12 @@ class InventoryKPIService:
         return {
             "phase": phase,
             "observations": count,
+            "total_waste_units": sum(waste_values) if waste_values else None,
+            "total_planned_quantity": sum(planned_values) if planned_values else None,
+            "rotation_ratio": (rotation_numerator / rotation_denominator
+                               if rotation_denominator > 0 else None),
+            "availability_percent": (100.0 * requirements_complete / requirements_total
+                                     if requirements_total > 0 else None),
             "total_demand": float(
                 total_demand
             ),
